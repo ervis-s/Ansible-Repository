@@ -1,0 +1,50 @@
+---
+# This playbook will install mysql and create db user and give permissions.
+
+- name: Download sources
+  get_url:
+     url: http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
+     dest: /opt/mysql/
+     
+- name: Install package
+  yum:
+    name: /opt/mysql/mysql-community-release-el7-5.noarch.rpm
+    state: present
+    
+- name: Install MySQL
+  yum: name=mysql-server state=installed
+  
+- name: Configure SELinux to start mysql on any port
+  seboolean: name=mysql_connect_any state=true persistent=yes
+  when: sestatus.rc != 0
+
+- name: Create Mysql configuration file
+  template: src=my.cnf.j2 dest=/etc/my.cnf
+  notify:
+  - restart mysql
+
+- name: Start Mysql Service
+  service: name=mysqld state=started enabled=yes
+
+- name: Install iptables
+  yum:
+    name: iptables-services
+    state: present
+
+- name: insert iptables rule
+  lineinfile: dest=/etc/sysconfig/iptables state=present regexp="{{ mysql_port }}"
+              insertafter="^:OUTPUT " line="-A INPUT -p tcp  --dport {{ mysql_port }} -j  ACCEPT"
+  notify: restart iptables
+  
+- name: this package is required to use the pip module
+  yum:
+    name: 
+      - python3-pip
+      - MySQL-python
+    state: present
+    
+- name: Create Application Database
+  mysql_db: name={{ dbname }} state=present
+
+- name: Create Application DB User
+  mysql_user: name={{ dbuser@localhost }} password={{ upassword }} priv=*.*:ALL host='%' state=present
