@@ -1,6 +1,15 @@
-- name: Hello World Sample
-  hosts: all
+---
+- name: Clone Git Repository
+  hosts: localhost
+
   tasks:
-    - name: Hello Message
-      debug:
-        msg: "Hello World!"
+    - git:
+        repo: 'https://github.com/ervis-s/Ansible-Repository'
+        dest: /tmp/test_ans2
+        version: Ansible-Template
+        force: yes
+      register: clone
+
+    - debug:
+        msg: Il Repository locale è stato aggiornato
+      when: clone.changed
