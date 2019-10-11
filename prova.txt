@@ -1,3 +1,1 @@
-prova.txt
-altra prova
-prova finale
+tutto OK
